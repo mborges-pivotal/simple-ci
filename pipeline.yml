@@ -129,7 +129,7 @@ jobs:
     params:
       ARTIFACT_ID: simple-php
   - put: simple-milestone
-    params: { file: build-output/simple-*.tar.gz }
+    params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
     params: { file: version/number-simple-php }
 
