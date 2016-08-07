@@ -3,13 +3,13 @@ groups:
 - name: develop
   jobs:
   - prepare-itest-env
-  - build-simple
-  - itest-simple
+  - build-simple-php
+  - itest-simple-php
   - itest-all
 - name: publish
   jobs:
-  - simple-major
-  - simple-minor
+  - simple-php-major
+  - simple-php-minor
 
 ##################################################
 # RESOURCES
@@ -130,7 +130,7 @@ jobs:
       ARTIFACT_ID: simple-php
   - put: simple-milestone
     params: { file: build-output/simple-*.tar.gz }
-  - put: simple-version
+  - put: simple-php-version
     params: { file: version/number-simple-php }
 
 # Deploy on PCF
