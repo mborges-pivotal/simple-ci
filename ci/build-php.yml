@@ -20,4 +20,4 @@ params:
   ARTIFACT_ID: simple
 
 run:
-  path: pipeline/ci/build.sh
+  path: pipeline/ci/build-php.sh

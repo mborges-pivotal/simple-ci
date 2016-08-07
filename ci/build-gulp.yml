@@ -20,4 +20,4 @@ params:
   ARTIFACT_ID: simple-ui
 
 run:
-  path: pipeline/ci/build.sh
+  path: pipeline/ci/build-gulp.sh
