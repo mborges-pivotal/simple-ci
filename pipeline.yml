@@ -30,7 +30,7 @@ resources:
   type: s3
   source:
     bucket: {{s3-bucket-milestone}}
-    regexp: simple-php-(.*).tar.gz
+    regexp: simple-(?:php|ui)-(.*).tar.gz
     access_key_id: {{aws-access-key-id}}
     secret_access_key: {{aws-secret-access-key}}
     #endpoint: {{s3-endpoint}}
@@ -40,7 +40,7 @@ resources:
   type: s3
   source:
     bucket: {{s3-bucket-release}}
-    regexp: simple-{2,3}[a-z]-(.*).tar.gz
+    regexp: simple-(?:php|ui)-(.*).tar.gz
     access_key_id: {{aws-access-key-id}}
     secret_access_key: {{aws-secret-access-key}}
     #endpoint: {{s3-endpoint}}
@@ -176,6 +176,7 @@ jobs:
       CF_APP_NAME: {{cf-simple-php-name}}
       CF_APP_HOST: {{cf-simple-php-host}}
       CF_APP_SERVICES: {{cf-simple-php-services}}
+      CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-php
   - put: cf-itest
     params:
@@ -218,7 +219,7 @@ jobs:
       resource: simple-ui-version
       params: { pre: rc }
   - task: build
-    file: pipeline/ci/build-ui.yml
+    file: pipeline/ci/build-gulp.yml
     params:
       ARTIFACT_ID: simple-ui
   - put: simple-milestone
@@ -244,6 +245,7 @@ jobs:
       CF_APP_NAME: {{cf-simple-ui-name}}
       CF_APP_HOST: {{cf-simple-ui-host}}
       CF_APP_SERVICES: {{cf-simple-ui-services}}
+      CF_BUILDPACK: staticfile_buildpack
       CF_ARTIFACT_ID: simple-ui
   - put: cf-itest
     params:
