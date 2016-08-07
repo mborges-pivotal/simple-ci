@@ -22,24 +22,6 @@ resources:
     branch: {{pipeline-git-branch}}
     #privage_key: {{git-private-key}}
 
-#### PCF
-- name: simple
-  type: git
-  source:
-    uri: {{simple-git-uri}}
-    branch: {{simple-git-branch}}
-    #private_key: {{git-private-key}}
-
-- name: simple-version
-  type: semver
-  source:
-    driver: git
-    uri: {{simple-git-version-uri}}
-    branch: {{simple-git-version-branch}}
-    file: number
-    initial_version: 1.0.0-rc.0
-    private_key: {{git-private-key}}
-
 - name: simple-milestone
   type: s3
   source:
@@ -59,6 +41,26 @@ resources:
     secret_access_key: {{aws-secret-access-key}}
     #endpoint: {{s3-endpoint}}
     region_name: us-west-2
+
+#### Simple
+#################
+- name: simple-php
+  type: git
+  source:
+    uri: {{simple-php-git-uri}}
+    branch: {{simple-php-git-branch}}
+    #private_key: {{git-private-key}}
+
+- name: simple-php-version
+  type: semver
+  source:
+    driver: git
+    uri: {{simple-git-version-uri}}
+    branch: {{simple-git-version-branch}}
+    file: number-simple-php
+    initial_version: 1.0.0-rc.0
+    private_key: {{git-private-key}}
+
 
 ##################
 #### PCF
@@ -109,27 +111,30 @@ jobs:
       CF_RABBIT_SERVICE: {{cf-rabbit-service}}
 
 #### SIMPLE
-- name: build-simple
-  serial_groups: [ simple-version ]
+
+# Build, Store, Version
+- name: build-simple-php
+  serial_groups: [ simple-php-version ]
   plan:
   - aggregate:
     - get: pipeline
     - get: project
-      resource: simple
+      resource: simple-php
       trigger: true
     - get: version
-      resource: simple-version
+      resource: simple-php-version
       params: { pre: rc }
   - task: build
-    file: pipeline/ci/build.yml
+    file: pipeline/ci/build-php.yml
     params:
-      ARTIFACT_ID: simple
+      ARTIFACT_ID: simple-php
   - put: simple-milestone
     params: { file: build-output/simple-*.tar.gz }
   - put: simple-version
-    params: { file: version/number }
+    params: { file: version/number-simple-php }
 
-- name: itest-simple
+# Deploy on PCF
+- name: itest-simple-php
   serial: true
   plan:
   - aggregate:
@@ -137,36 +142,37 @@ jobs:
       passed: [ prepare-itest-env ]
     - get: release
       resource: simple-milestone
-      passed: [ build-simple ]
+      passed: [ build-simple-php ]
       trigger: true
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
       <<: *cf-params
-      CF_APP_NAME: {{cf-simple-name}}
-      CF_APP_HOST: {{cf-simple-host}}
-      CF_APP_SERVICES: {{cf-simple-services}}
-      CF_ARTIFACT_ID: simple
+      CF_APP_NAME: {{cf-simple-php-name}}
+      CF_APP_HOST: {{cf-simple-php-host}}
+      CF_APP_SERVICES: {{cf-simple-php-services}}
+      CF_ARTIFACT_ID: simple-php
   - put: cf-itest
     params:
       manifest: prepare-manifest-output/manifest.yml
-      current_app_name: {{cf-simple-name}}
+      current_app_name: {{cf-simple-php-name}}
 
-- name: simple-major
+# Manual tasks to bump version
+- name: simple-php-major
   serial_groups: [ simple-version ]
   plan:
-  - get: simple-version
+  - get: simple-php-version
     params: { bump: major, pre: rc }
-  - put: simple-version
-    params: { file: simple-version/number }
+  - put: simple-php-version
+    params: { file: simple-version/number-simple-php }
 
-- name: simple-minor
+- name: simple-php-minor
   serial_groups: [ simple-version ]
   plan:
-  - get: simple-version
+  - get: simple-php-version
     params: { bump: minor, pre: rc }
-  - put: simple-version
-    params: { file: simple-version/number }
+  - put: simple-php-version
+    params: { file: simple-version/number-simple-php }
 
 ################
 #### itest-all
@@ -175,7 +181,7 @@ jobs:
   serial: true
   plan:
   - get: pipeline
-    passed: [ itest-simple]
+    passed: [ itest-simple-php]
     trigger: true
   - task: itest-all
     file: pipeline/ci/itest-all.yml
