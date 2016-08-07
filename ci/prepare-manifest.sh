@@ -24,7 +24,7 @@ applications:
   instances: 1
   timeout: 180
   services: [ $CF_APP_SERVICES ]
-  buildpack: php_oracle_buildpack
+  buildpack: $CF_BUILDPACK
   env:
     BP_DEBUG: "True"
 EOF
