@@ -4,12 +4,16 @@ groups:
   jobs:
   - prepare-itest-env
   - build-simple-php
-  - itest-simple-php
+  - deploy-simple-php
+  - build-simple-ui
+  - deploy-simple-ui
   - itest-all
 - name: publish
   jobs:
   - simple-php-major
   - simple-php-minor
+  - simple-ui-major
+  - simple-ui-minor
 
 ##################################################
 # RESOURCES
@@ -26,7 +30,7 @@ resources:
   type: s3
   source:
     bucket: {{s3-bucket-milestone}}
-    regexp: simple-(.*).tar.gz
+    regexp: simple-php-(.*).tar.gz
     access_key_id: {{aws-access-key-id}}
     secret_access_key: {{aws-secret-access-key}}
     #endpoint: {{s3-endpoint}}
@@ -36,13 +40,13 @@ resources:
   type: s3
   source:
     bucket: {{s3-bucket-release}}
-    regexp: simple-(.*).tar.gz
+    regexp: simple-{2,3}[a-z]-(.*).tar.gz
     access_key_id: {{aws-access-key-id}}
     secret_access_key: {{aws-secret-access-key}}
     #endpoint: {{s3-endpoint}}
     region_name: us-west-2
 
-#### Simple
+#### Simple PHP
 #################
 - name: simple-php
   type: git
@@ -58,6 +62,25 @@ resources:
     uri: {{simple-git-version-uri}}
     branch: {{simple-git-version-branch}}
     file: number-simple-php
+    initial_version: 1.0.0-rc.0
+    private_key: {{git-private-key}}
+
+#### Simple UI
+#################
+- name: simple-ui
+  type: git
+  source:
+    uri: {{simple-ui-git-uri}}
+    branch: {{simple-ui-git-branch}}
+    #private_key: {{git-private-key}}
+
+- name: simple-ui-version
+  type: semver
+  source:
+    driver: git
+    uri: {{simple-git-version-uri}}
+    branch: {{simple-git-version-branch}}
+    file: number-simple-ui
     initial_version: 1.0.0-rc.0
     private_key: {{git-private-key}}
 
@@ -110,7 +133,9 @@ jobs:
       CF_REDIS_SERVICE: {{cf-redis-service}}
       CF_RABBIT_SERVICE: {{cf-rabbit-service}}
 
-#### SIMPLE
+##################
+#### SIMPLE PHP
+##################
 
 # Build, Store, Version
 - name: build-simple-php
@@ -131,10 +156,10 @@ jobs:
   - put: simple-milestone
     params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
-    params: { file: version/number-simple-php }
+    params: { file: version/number }
 
 # Deploy on PCF
-- name: itest-simple-php
+- name: deploy-simple-php
   serial: true
   plan:
   - aggregate:
@@ -161,18 +186,88 @@ jobs:
 - name: simple-php-major
   serial_groups: [ simple-version ]
   plan:
-  - get: simple-php-version
+  - get: version
+    resource: simple-php-version
     params: { bump: major, pre: rc }
   - put: simple-php-version
-    params: { file: simple-version/number-simple-php }
+    params: { file: version/number }
 
 - name: simple-php-minor
   serial_groups: [ simple-version ]
   plan:
-  - get: simple-php-version
+  - get: version
+    resource: simple-php-version
     params: { bump: minor, pre: rc }
   - put: simple-php-version
-    params: { file: simple-version/number-simple-php }
+    params: { file: version/number }
+
+##################
+#### SIMPLE UI
+##################
+
+# Build, Store, Version
+- name: build-simple-ui
+  serial_groups: [ simple-ui-version ]
+  plan:
+  - aggregate:
+    - get: pipeline
+    - get: project
+      resource: simple-ui
+      trigger: true
+    - get: version
+      resource: simple-ui-version
+      params: { pre: rc }
+  - task: build
+    file: pipeline/ci/build-ui.yml
+    params:
+      ARTIFACT_ID: simple-ui
+  - put: simple-milestone
+    params: { file: build-output/simple-ui-*.tar.gz }
+  - put: simple-ui-version
+    params: { file: version/number }
+
+# Deploy on PCF
+- name: deploy-simple-ui
+  serial: true
+  plan:
+  - aggregate:
+    - get: pipeline
+      passed: [ prepare-itest-env ]
+    - get: release
+      resource: simple-milestone
+      passed: [ build-simple-ui ]
+      trigger: true
+  - task: prepare-manifest
+    file: pipeline/ci/prepare-manifest.yml
+    params:
+      <<: *cf-params
+      CF_APP_NAME: {{cf-simple-ui-name}}
+      CF_APP_HOST: {{cf-simple-ui-host}}
+      CF_APP_SERVICES: {{cf-simple-ui-services}}
+      CF_ARTIFACT_ID: simple-ui
+  - put: cf-itest
+    params:
+      manifest: prepare-manifest-output/manifest.yml
+      current_app_name: {{cf-simple-ui-name}}
+
+# Manual tasks to bump version
+- name: simple-ui-major
+  serial_groups: [ simple-version ]
+  plan:
+  - get: version
+    resource: simple-ui-version
+    params: { bump: major, pre: rc }
+  - put: simple-php-version
+    params: { file: version/number }
+
+- name: simple-ui-minor
+  serial_groups: [ simple-version ]
+  plan:
+  - get: version
+    resource: simple-ui-version
+    params: { bump: minor, pre: rc }
+  - put: simple-ui-version
+    params: { file: version/number }
 
 ################
 #### itest-all
@@ -181,7 +276,7 @@ jobs:
   serial: true
   plan:
   - get: pipeline
-    passed: [ itest-simple-php]
+    passed: [ deploy-simple-php, deploy-simple-ui]
     trigger: true
   - task: itest-all
     file: pipeline/ci/itest-all.yml

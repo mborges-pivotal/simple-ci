@@ -41,7 +41,7 @@ git-private-key: |
 #############
 # simple PHP
 #############
-cf-simple-php-name: simple
+cf-simple-php-name: simple-php
 cf-simple-php-host: simple-php
 cf-simple-php-services: oracle, redis, rabbit
 
@@ -52,8 +52,9 @@ simple-php-git-branch: master
 #############
 # simple UI
 #############
-cf-simple-ui-name: simple
-cf-simple-ui-host: simple-php
+cf-simple-ui-name: simple-ui
+cf-simple-ui-host: simple-ui
+cf-simple-ui-services: 
 
 simple-ui-git-uri: https://github.com/mborges-pivotal/simple-ui.git
 simple-ui-git-branch: master
