@@ -19,7 +19,7 @@ cat <<EOF >manifest.yml
 applications:
 - name: $CF_APP_NAME
   host: $CF_APP_HOST
-  path: .
+  path: $CF_APP_PATH
   memory: 256M
   instances: 1
   timeout: 180

@@ -175,6 +175,7 @@ jobs:
       <<: *cf-params
       CF_APP_NAME: {{cf-simple-php-name}}
       CF_APP_HOST: {{cf-simple-php-host}}
+      CF_APP_PATH: ./projects
       CF_APP_SERVICES: {{cf-simple-php-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-php
@@ -244,6 +245,7 @@ jobs:
       <<: *cf-params
       CF_APP_NAME: {{cf-simple-ui-name}}
       CF_APP_HOST: {{cf-simple-ui-host}}
+      CF_APP_PATH: .
       CF_APP_SERVICES: {{cf-simple-ui-services}}
       CF_BUILDPACK: staticfile_buildpack
       CF_ARTIFACT_ID: simple-ui
