@@ -9,10 +9,10 @@ image_resource:
 
 inputs:
 - name: pipeline
-- name: release
+#- name: release
 
-outputs:
-- name: itest
+#outputs:
+#- name: itest
 
 params:
   CF_API_URL:
@@ -22,8 +22,7 @@ params:
   CF_ORG:
   CF_SPACE:
   CF_APP_NAME:
-  CF_APP_SERVICES:
-  CF_ARTIFACT_ID:
+  CF_APP_HOST:
 
 run:
   path: pipeline/ci/itest.sh

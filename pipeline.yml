@@ -5,8 +5,10 @@ groups:
   - prepare-itest-env
   - build-simple-php
   - deploy-simple-php
+  - itest-simple-php
   - build-simple-ui
   - deploy-simple-ui
+  - itest-simple-ui
   - itest-all
 - name: publish
   jobs:
@@ -184,6 +186,20 @@ jobs:
       manifest: prepare-manifest-output/manifest.yml
       current_app_name: {{cf-simple-php-name}}
 
+# Functional test
+- name: itest-simple-php
+  serial: true
+  plan:
+  - get: pipeline
+    passed: [ deploy-simple-php ]
+    trigger: true
+  - task: itest
+    file: pipeline/ci/itest.yml
+    params:
+      <<: *cf-params
+      CF_APP_NAME: {{cf-simple-php-name}}
+      CF_APP_HOST: {{cf-simple-php-host}}
+
 # Manual tasks to bump version
 - name: simple-php-major
   serial_groups: [ simple-version ]
@@ -254,6 +270,20 @@ jobs:
       manifest: prepare-manifest-output/manifest.yml
       current_app_name: {{cf-simple-ui-name}}
 
+# Functional test
+- name: itest-simple-ui
+  serial: true
+  plan:
+  - get: pipeline
+    passed: [ deploy-simple-ui ]
+    trigger: true
+  - task: itest
+    file: pipeline/ci/itest.yml
+    params:
+      <<: *cf-params
+      CF_APP_NAME: {{cf-simple-ui-name}}
+      CF_APP_HOST: {{cf-simple-ui-host}}
+
 # Manual tasks to bump version
 - name: simple-ui-major
   serial_groups: [ simple-version ]
@@ -280,7 +310,7 @@ jobs:
   serial: true
   plan:
   - get: pipeline
-    passed: [ deploy-simple-php, deploy-simple-ui]
+    passed: [ itest-simple-php, itest-simple-ui]
     trigger: true
   - task: itest-all
     file: pipeline/ci/itest-all.yml
