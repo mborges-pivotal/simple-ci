@@ -21,7 +21,8 @@ popd
 #sleep $SLEEP
 
 echo "before tar"
-tar -czvf $ARTIFACT_ID-$VERSION.tar.gz ./project/dist 
+cd ./project/dist
+tar -czvf $ARTIFACT_ID-$VERSION.tar.gz * 
 echo "after tar"
 mv $ARTIFACT_ID-$VERSION.tar.gz ./build-output
 
