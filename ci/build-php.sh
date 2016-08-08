@@ -19,7 +19,7 @@ popd
 echo "before tar"
 cd ./project
 tar -czvf $ARTIFACT_ID-$VERSION.tar.gz *
+mv $ARTIFACT_ID-$VERSION.tar.gz ../build-output
 echo "after tar"
-mv $ARTIFACT_ID-$VERSION.tar.gz ./build-output
 
 echo "done"
