@@ -67,6 +67,13 @@ resources:
     initial_version: 1.0.0-rc.0
     private_key: {{git-private-key}}
 
+- name: simple-php-release
+  type: github-release
+  source:
+    user: mborges-pivotal
+    repository: simple-php
+    access_token: {{git-access-token}}    
+
 #### Simple UI
 #################
 - name: simple-ui
@@ -85,6 +92,13 @@ resources:
     file: number-simple-ui
     initial_version: 1.0.0-rc.0
     private_key: {{git-private-key}}
+
+- name: simple-ui-release
+  type: github-release
+  source:
+    user: mborges-pivotal
+    repository: simple-ui
+    access_token: {{git-access-token}}    
 
 
 ##################
@@ -159,6 +173,12 @@ jobs:
     params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
     params: { file: version/number }
+  - put: simple-php-release
+    params:
+      name: version/number
+      tag: version/number
+      globs:
+      - build-output/simple-php-*.tar.gz
 
 # Deploy on PCF
 - name: deploy-simple-php
@@ -243,6 +263,12 @@ jobs:
     params: { file: build-output/simple-ui-*.tar.gz }
   - put: simple-ui-version
     params: { file: version/number }
+  - put: simple-ui-release
+    params:
+      name: version/number
+      tag: version/number
+      globs:
+      - build-output/simple-ui-*.tar.gz    
 
 # Deploy on PCF
 - name: deploy-simple-ui
