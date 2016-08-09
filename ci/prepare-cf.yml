@@ -4,10 +4,10 @@ platform: linux
 image_resource:
   type: docker-image
   source: 
-    repository: localhost:5000/patrickcrocker/cloudfoundry-cli
+    repository: 192.168.1.120:5000/patrickcrocker/cloudfoundry-cli
     #repository: patrickcrocker/cloudfoundry-cli
     tag: 'latest'
-    insecure_registries: ["localhost:5000"]
+    insecure_registries: ["192.168.1.120:5000"]
     #username: myuser
     #password: mypass
 
