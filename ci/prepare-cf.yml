@@ -4,10 +4,10 @@ platform: linux
 image_resource:
   type: docker-image
   source: 
-    repository: c2-54-149-58-221.us-west-2.compute.amazonaws.com:80/patrickcrocker/cloudfoundry-cli
+    repository: localhost:5000/patrickcrocker/cloudfoundry-cli
     #repository: patrickcrocker/cloudfoundry-cli
     tag: 'latest'
-    insecure_registries: ["mc2-54-149-58-221.us-west-2.compute.amazonaws.com:80"]
+    insecure_registries: ["localhost:5000"]
     #username: myuser
     #password: mypass
 
