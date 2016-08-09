@@ -7,6 +7,8 @@ image_resource:
     #repository: patrickcrocker/cloudfoundry-cli
     tag: 'latest'
     insecure_registries: ["mc2-54-149-58-221.us-west-2.compute.amazonaws.com:80"]
+    username: myuser
+    password: mypass
 
 inputs:
 - name: pipeline
