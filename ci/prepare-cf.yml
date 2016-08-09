@@ -3,9 +3,10 @@ platform: linux
 
 image_resource:
   type: docker-image
-  source:
-    repository: patrickcrocker/cloudfoundry-cli
+  source: c2-54-149-58-221.us-west-2.compute.amazonaws.com:80/patrickcrocker/cloudfoundry-cli
+    #repository: patrickcrocker/cloudfoundry-cli
     tag: 'latest'
+    insecure_registries: ["mc2-54-149-58-221.us-west-2.compute.amazonaws.com:80"]
 
 inputs:
 - name: pipeline
