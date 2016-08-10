@@ -11,3 +11,7 @@ echo "itest - add your test automation here"
 # if [ "true" = "$DELETE_ORG" ]; then
 #   cf delete-space -f $CF_ORG
 # fi
+
+npm install -g newman
+
+

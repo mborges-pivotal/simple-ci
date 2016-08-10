@@ -18,6 +18,15 @@ groups:
   - simple-ui-minor
 
 ##################################################
+# RESOURCES TYPES
+##################################################
+resource_types:
+- name: ftp
+  type: docker-image
+  source:
+    repository: aequitas/ftp-resource
+
+##################################################
 # RESOURCES
 ##################################################
 resources:
@@ -47,6 +56,12 @@ resources:
     secret_access_key: {{aws-secret-access-key}}
     #endpoint: {{s3-endpoint}}
     region_name: us-west-2
+
+- name: ftp
+  type: ftp
+  source:
+    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm
+    regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
 
 #### Simple PHP
 #################
@@ -173,12 +188,15 @@ jobs:
     params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
     params: { file: version/number }
-  - put: simple-php-release
-    params:
-      name: version/number
-      tag: version/number
-      globs:
-      - build-output/simple-php-*.tar.gz
+  - put: ftp
+    params: { file: build-output/simple-php-*.tar.gz }
+  # Commented out the GIT Release  
+  #- put: simple-php-release
+    #params:
+      #name: version/number
+      #tag: version/number
+      #globs:
+      #- build-output/simple-php-*.tar.gz
 
 # Deploy on PCF
 - name: deploy-simple-php
@@ -188,9 +206,15 @@ jobs:
     - get: pipeline
       passed: [ prepare-itest-env ]
     - get: release
-      resource: simple-milestone
+      resource: ftp
       passed: [ build-simple-php ]
       trigger: true
+      #params: { version: "2.1.0" }
+    # Trying to use the FTP resource  
+    #- get: release
+      #resource: simple-milestone
+      #passed: [ build-simple-php ]
+      #trigger: true
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
