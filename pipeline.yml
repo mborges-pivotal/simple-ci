@@ -421,6 +421,8 @@ jobs:
       CF_APP_SERVICES: {{cf-simple-php-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-php
+      CF_INSTANCES: 1
+
   - put: cf-itest
     params:
       manifest: prepare-manifest-output/manifest.yml
@@ -525,6 +527,7 @@ jobs:
       CF_APP_SERVICES: {{cf-simple-ui-services}}
       CF_BUILDPACK: staticfile_buildpack
       CF_ARTIFACT_ID: simple-ui
+      CF_INSTANCES: 1
   - put: cf-itest
     params:
       manifest: prepare-manifest-output/manifest.yml
