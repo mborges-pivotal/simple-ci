@@ -25,6 +25,8 @@ groups:
   - prepare-prod-env
   - deploy-simple-php-uat
   - deploy-simple-ui-uat
+  - deploy-simple-php-prod
+  - deploy-simple-ui-prod
 
 ##################################################
 # RESOURCES TYPES
@@ -66,17 +68,17 @@ resources:
     #endpoint: {{s3-endpoint}}
     region_name: us-west-2
 
-- name: ftp
+- name: ftp-php
   type: ftp
   source:
     uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm
-    regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
+    regex: (?P<file>simple-php-(?P<version>.*).tar.gz)
 
-- name: ftp-release
+- name: ftp-ui
   type: ftp
   source:
-    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
-    regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
+    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm
+    regex: (?P<file>simple-ui-(?P<version>.*).tar.gz)
 
 - name: ftp-release-php
   type: ftp
@@ -240,6 +242,7 @@ jobs:
       CF_REDIS_SERVICE: {{cf-uat-redis-service}}
       CF_RABBIT_SERVICE: {{cf-uat-rabbit-service}}
 
+#### UAT
 - name: deploy-simple-php-uat
   serial: true
   plan:
@@ -279,7 +282,7 @@ jobs:
       CF_SPACE: {{cf-uat-space}}
       CF_APP_NAME: {{cf-simple-ui-name}}
       CF_APP_HOST: {{cf-simple-ui-host}}
-      CF_APP_PATH: ./project
+      CF_APP_PATH: .
       CF_APP_SERVICES: {{cf-simple-ui-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-ui
@@ -302,6 +305,55 @@ jobs:
       CF_REDIS_SERVICE: {{cf-prod-redis-service}}
       CF_RABBIT_SERVICE: {{cf-prod-rabbit-service}}            
 
+
+#### PROD
+- name: deploy-simple-php-prod
+  serial: true
+  plan:
+  - aggregate:
+    - get: pipeline
+      passed: [ deploy-simple-php-uat, prepare-prod-env ]
+    - get: release
+      resource: ftp-release-php
+  - task: prepare-manifest
+    file: pipeline/ci/prepare-manifest.yml
+    params:
+      <<: *cf-params
+      CF_SPACE: {{cf-prod-space}}
+      CF_APP_NAME: {{cf-simple-php-name}}
+      CF_APP_HOST: {{cf-simple-php-host}}
+      CF_APP_PATH: ./project
+      CF_APP_SERVICES: {{cf-simple-php-services}}
+      CF_BUILDPACK: php_oracle_buildpack
+      CF_ARTIFACT_ID: simple-php
+  - put: cf-prod
+    params:
+      manifest: prepare-manifest-output/manifest.yml
+      current_app_name: {{cf-simple-php-name}}
+
+- name: deploy-simple-ui-prod
+  serial: true
+  plan:
+  - aggregate:
+    - get: pipeline
+      passed: [ deploy-simple-ui-uat, prepare-prod-env ]
+    - get: release
+      resource: ftp-release-ui
+  - task: prepare-manifest
+    file: pipeline/ci/prepare-manifest.yml
+    params:
+      <<: *cf-params
+      CF_SPACE: {{cf-prod-space}}
+      CF_APP_NAME: {{cf-simple-ui-name}}
+      CF_APP_HOST: {{cf-simple-ui-host}}
+      CF_APP_PATH: .
+      CF_APP_SERVICES: {{cf-simple-ui-services}}
+      CF_BUILDPACK: php_oracle_buildpack
+      CF_ARTIFACT_ID: simple-ui
+  - put: cf-prod
+    params:
+      manifest: prepare-manifest-output/manifest.yml
+      current_app_name: {{cf-simple-ui-name}}
 
 
 ##################
@@ -328,7 +380,7 @@ jobs:
   #  params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
     params: { file: version/number }
-  - put: ftp
+  - put: ftp-php
     params: { file: build-output/simple-php-*.tar.gz }
   # Commented out the GIT Release  
   #- put: simple-php-release
@@ -346,7 +398,7 @@ jobs:
     - get: pipeline
       passed: [ prepare-itest-env ]
     - get: release
-      resource: ftp
+      resource: ftp-php
       passed: [ build-simple-php ]
       trigger: true
     #- get: release
@@ -408,9 +460,9 @@ jobs:
   serial_groups: [ simple-php-version, simple-version ]
   plan:
   - get: ftp
-    resource: ftp
-  - put: ftp-release
-    params: { file: ftp/simple-php-*.tar.gz}
+    resource: ftp-php
+  - put: ftp-release-php
+    params: { file: ftp/simple-php-*.tar.gz, keep_versions: 1}
 
 ##################
 #### SIMPLE UI
@@ -435,7 +487,7 @@ jobs:
   #- put: simple-milestone
     #params: { file: build-output/simple-ui-*.tar.gz }
   - put: ftp
-    #resource: ftp
+    resource: ftp-ui
     params: { file: build-output/simple-ui-*.tar.gz }  
   - put: simple-ui-version
     params: { file: version/number }
@@ -454,7 +506,7 @@ jobs:
     - get: pipeline
       passed: [ prepare-itest-env ]
     - get: release
-      resource: ftp
+      resource: ftp-ui
       passed: [ build-simple-ui ]
       trigger: true
   - task: prepare-manifest
@@ -512,9 +564,9 @@ jobs:
   serial_groups: [ simple-ui-version, simple-version ]
   plan:
   - get: ftp
-    resource: ftp
-  - put: ftp-release
-    params: { file: ftp/simple-ui-*.tar.gz}
+    resource: ftp-ui
+  - put: ftp-release-ui
+    params: { file: ftp/simple-ui-*.tar.gz, keep_versions: 1}
 
  
 ################
