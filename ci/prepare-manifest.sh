@@ -11,6 +11,7 @@ pushd prepare-manifest-output
 
 ARTIFACT_PATH=$(ls $CF_ARTIFACT_ID-*.tar.gz)
 echo "########### $ARTIFACT_PATH #############"
+echo "########### $CF_APP_HOST-$CF_SPACE #############"
 
 tar -xzvf $ARTIFACT_PATH 
 
