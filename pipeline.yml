@@ -262,6 +262,7 @@ jobs:
       CF_APP_SERVICES: {{cf-simple-php-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-php
+      CF_INSTANCES: 2
   - put: cf-uat
     params:
       manifest: prepare-manifest-output/manifest.yml
@@ -286,6 +287,7 @@ jobs:
       CF_APP_SERVICES: {{cf-simple-ui-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-ui
+      CF_INSTANCES: 2
   - put: cf-uat
     params:
       manifest: prepare-manifest-output/manifest.yml
@@ -326,6 +328,7 @@ jobs:
       CF_APP_SERVICES: {{cf-simple-php-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-php
+      CF_INSTANCES: 4
   - put: cf-prod
     params:
       manifest: prepare-manifest-output/manifest.yml
@@ -350,6 +353,8 @@ jobs:
       CF_APP_SERVICES: {{cf-simple-ui-services}}
       CF_BUILDPACK: php_oracle_buildpack
       CF_ARTIFACT_ID: simple-ui
+      CF_INSTANCES: 2
+
   - put: cf-prod
     params:
       manifest: prepare-manifest-output/manifest.yml

@@ -20,6 +20,8 @@ params:
   CF_APP_NAME:
   CF_APP_HOST:
   CF_APP_SERVICES:
+  CF_INSTANCES: 1
+
 
 run:
   path: pipeline/ci/prepare-manifest.sh

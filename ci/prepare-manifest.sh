@@ -22,7 +22,7 @@ applications:
   host: $CF_APP_HOST-$CF_SPACE
   path: $CF_APP_PATH
   memory: 256M
-  instances: 1
+  instances: $CF_INSTANCES
   timeout: 180
   services: [ $CF_APP_SERVICES ]
   buildpack: $CF_BUILDPACK
