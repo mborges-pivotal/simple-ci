@@ -2,8 +2,6 @@
 
 set -e
 
-echo "itest - add your test automation here"
-
 # Cleanup temp org and space
 # if [ "true" = "$DELETE_SPACE" ]; then
 #   cf delete-space $CF_SPACE
@@ -12,6 +10,14 @@ echo "itest - add your test automation here"
 #   cf delete-space -f $CF_ORG
 # fi
 
-npm install -g newman
+echo "Installing newman...."
+npm install -g newman &>/dev/null
 
+newman run pipeline/postman/PivotalPOC-Maven-APIs.postman_collection.json -e pipeline/postman/Maven.postman_environment.json 2>&1 | tee output.txt
 
+echo "Status code is $?"
+if [ $? -ne 0 ]; then
+	echo " !!! ERROR !!!" >&2
+fi
+
+exit 1

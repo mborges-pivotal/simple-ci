@@ -16,6 +16,7 @@ groups:
   - simple-php-minor
   - simple-ui-major
   - simple-ui-minor
+  - simple-ui-promote
 
 ##################################################
 # RESOURCES TYPES
@@ -63,6 +64,12 @@ resources:
     uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm
     regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
 
+- name: ftp-release
+  type: ftp-release
+  source:
+    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
+    regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
+
 #### Simple PHP
 #################
 - name: simple-php
@@ -82,12 +89,13 @@ resources:
     initial_version: 1.0.0-rc.0
     private_key: {{git-private-key}}
 
+# Work in progress - after UAT test
 - name: simple-php-release
   type: github-release
   source:
     user: mborges-pivotal
     repository: simple-php
-    access_token: {{git-access-token}}    
+    access_token: {{git-access-token}}
 
 #### Simple UI
 #################
@@ -108,6 +116,7 @@ resources:
     initial_version: 1.0.0-rc.0
     private_key: {{git-private-key}}
 
+# Work in progress - after UAT test
 - name: simple-ui-release
   type: github-release
   source:
@@ -209,8 +218,6 @@ jobs:
       resource: ftp
       passed: [ build-simple-php ]
       trigger: true
-      #params: { version: "2.1.0" }
-    # Trying to use the FTP resource  
     #- get: release
       #resource: simple-milestone
       #passed: [ build-simple-php ]
@@ -283,16 +290,18 @@ jobs:
     file: pipeline/ci/build-gulp.yml
     params:
       ARTIFACT_ID: simple-ui
-  - put: simple-milestone
-    params: { file: build-output/simple-ui-*.tar.gz }
+  #- put: simple-milestone
+    #params: { file: build-output/simple-ui-*.tar.gz }
+  - put: ftp
+    params: { file: build-output/simple-php-*.tar.gz }  
   - put: simple-ui-version
     params: { file: version/number }
-  - put: simple-ui-release
-    params:
-      name: version/number
-      tag: version/number
-      globs:
-      - build-output/simple-ui-*.tar.gz    
+  #- put: simple-ui-release
+    #params:
+      #name: version/number
+      #ag: version/number
+      #globs:
+      #- build-output/simple-ui-*.tar.gz    
 
 # Deploy on PCF
 - name: deploy-simple-ui
@@ -353,6 +362,15 @@ jobs:
   - put: simple-ui-version
     params: { file: version/number }
 
+- name: simple-ui-promote
+  serial_groups: [ simple-ui-version, simple-version ]
+  plan:
+  - get: ftp
+      resource: simple-milestone
+      passed: [ itest-simple-ui ]
+ - put: ftp-release
+    params: { file: simple-php-*.tar.gz }
+ 
 ################
 #### itest-all
 ################
