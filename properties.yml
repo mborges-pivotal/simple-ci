@@ -7,17 +7,31 @@ cf-system-domain: pcf.borgescloud.com
 cf-app-domain: pcf.borgescloud.com
 cf-username: mborges
 cf-org: Borges-Org
-cf-space: staging
 cf-skip-ssl: true
+cf-space: qa
+cf-uat-space: uat
+cf-prod-space: prod
 
 # PCF Service
 # can be used by one or more applications
 cf-oracle-service-url: c2-54-149-58-221.us-west-2.compute.amazonaws.com:49161/Xe
 cf-oracle-service-username: system
 cf-oracle-service-password: oracle
-
 cf-redis-service: p-redis shared-vm redis
 cf-rabbit-service: p-rabbitmq standard rabbit
+
+cf-uat-oracle-service-url: c2-54-149-58-221.us-west-2.compute.amazonaws.com:49161/Xe
+cf-uat-oracle-service-username: system
+cf-uat-oracle-service-password: oracle
+cf-uat-redis-service: p-redis shared-vm redis
+cf-uat-rabbit-service: p-rabbitmq standard rabbit
+
+cf-prod-oracle-service-url: c2-54-149-58-221.us-west-2.compute.amazonaws.com:49161/Xe
+cf-prod-oracle-service-username: system
+cf-prod-oracle-service-password: oracle
+cf-prod-redis-service: p-redis dedicated-vm redis
+cf-prod-rabbit-service: p-rabbitmq standard rabbit
+
 
 ############
 # Pipeline

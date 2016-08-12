@@ -16,6 +16,7 @@ outputs:
 
 params:
   CF_ARTIFACT_ID:
+  CF_SPACE:
   CF_APP_NAME:
   CF_APP_HOST:
   CF_APP_SERVICES:

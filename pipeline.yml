@@ -14,9 +14,15 @@ groups:
   jobs:
   - simple-php-major
   - simple-php-minor
+  - simple-php-promote
   - simple-ui-major
   - simple-ui-minor
   - simple-ui-promote
+- name: deploy
+  jobs:
+  - prepare-uat-env
+  - prepare-prod-env
+  - deploy-simple-php-uat
 
 ##################################################
 # RESOURCES TYPES
@@ -65,10 +71,11 @@ resources:
     regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
 
 - name: ftp-release
-  type: ftp-release
+  type: ftp
   source:
     uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
     regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
+
 
 #### Simple PHP
 #################
@@ -138,6 +145,16 @@ resources:
     organization: {{cf-org}}
     space: {{cf-space}}
 
+- name: cf-uat
+  type: cf
+  source:
+    api: {{cf-api-url}}
+    skip_cert_check: true
+    username: {{cf-username}}
+    password: {{cf-password}}
+    organization: {{cf-org}}
+    space: {{cf-uat-space}}
+
 - name: cf-prod
   type: cf
   source:
@@ -146,7 +163,7 @@ resources:
     username: {{cf-username}}
     password: {{cf-password}}
     organization: {{cf-org}}
-    space: {{cf-space}}
+    space: {{cf-prod-space}}
 
 cf-params: &cf-params
   CF_API_URL: {{cf-api-url}}
@@ -154,7 +171,6 @@ cf-params: &cf-params
   CF_USERNAME: {{cf-username}}
   CF_PASSWORD: {{cf-password}}
   CF_ORG: {{cf-org}}
-  CF_SPACE: {{cf-space}}
 
 ##################################################
 # JOBS
@@ -167,11 +183,69 @@ jobs:
     file: pipeline/ci/prepare-cf.yml
     params:
       <<: *cf-params
+      CF_SPACE: {{cf-space}}
       CF_DB_SERVICE_URL: {{cf-oracle-service-url}}
       CF_DB_SERVICE_USERNAME: {{cf-oracle-service-username}}
       CF_DB_SERVICE_PASSWORD: {{cf-oracle-service-password}}
       CF_REDIS_SERVICE: {{cf-redis-service}}
       CF_RABBIT_SERVICE: {{cf-rabbit-service}}
+
+#####
+# DEPLOY
+######
+- name: prepare-uat-env
+  plan:
+  - get: pipeline
+  - task: prepare-cf
+    file: pipeline/ci/prepare-cf.yml
+    params:
+      <<: *cf-params
+      CF_SPACE: {{cf-uat-space}}
+      CF_DB_SERVICE_URL: {{cf-uat-oracle-service-url}}
+      CF_DB_SERVICE_USERNAME: {{cf-uat-oracle-service-username}}
+      CF_DB_SERVICE_PASSWORD: {{cf-uat-oracle-service-password}}
+      CF_REDIS_SERVICE: {{cf-uat-redis-service}}
+      CF_RABBIT_SERVICE: {{cf-uat-rabbit-service}}
+
+- name: deploy-simple-php-uat
+  serial: true
+  plan:
+  - aggregate:
+    - get: pipeline
+      passed: [ prepare-uat-env ]
+    - get: release
+      resource: ftp-release
+  - task: prepare-manifest
+    file: pipeline/ci/prepare-manifest.yml
+    params:
+      <<: *cf-params
+      CF_SPACE: {{cf-uatspace}}
+      CF_APP_NAME: {{cf-simple-php-name}}
+      CF_APP_HOST: {{cf-simple-php-host}}
+      CF_APP_PATH: ./project
+      CF_APP_SERVICES: {{cf-simple-php-services}}
+      CF_BUILDPACK: php_oracle_buildpack
+      CF_ARTIFACT_ID: simple-php
+  - put: cf-uat
+    params:
+      manifest: prepare-manifest-output/manifest.yml
+      current_app_name: {{cf-simple-php-name}}
+
+- name: prepare-prod-env
+  plan:
+  - get: pipeline
+  - task: prepare-cf
+    file: pipeline/ci/prepare-cf.yml
+    params:
+      <<: *cf-params
+      CF_SPACE: {{cf-prod-space}}
+      CF_DB_SERVICE_URL: {{cf-prod-oracle-service-url}}
+      CF_DB_SERVICE_USERNAME: {{cf-prod-oracle-service-username}}
+      CF_DB_SERVICE_PASSWORD: {{cf-prod-oracle-service-password}}
+      CF_REDIS_SERVICE: {{cf-prod-redis-service}}
+      CF_RABBIT_SERVICE: {{cf-prod-rabbit-service}}            
+
+
 
 ##################
 #### SIMPLE PHP
@@ -193,8 +267,8 @@ jobs:
     file: pipeline/ci/build-php.yml
     params:
       ARTIFACT_ID: simple-php
-  - put: simple-milestone
-    params: { file: build-output/simple-php-*.tar.gz }
+  #- put: simple-milestone
+  #  params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
     params: { file: version/number }
   - put: ftp
@@ -226,6 +300,7 @@ jobs:
     file: pipeline/ci/prepare-manifest.yml
     params:
       <<: *cf-params
+      CF_SPACE: {{cf-space}}
       CF_APP_NAME: {{cf-simple-php-name}}
       CF_APP_HOST: {{cf-simple-php-host}}
       CF_APP_PATH: ./project
@@ -248,10 +323,12 @@ jobs:
     file: pipeline/ci/itest.yml
     params:
       <<: *cf-params
+      CF_SPACE: {{cf-space}}
       CF_APP_NAME: {{cf-simple-php-name}}
       CF_APP_HOST: {{cf-simple-php-host}}
 
-# Manual tasks to bump version
+# publish
+###############################
 - name: simple-php-major
   serial_groups: [ simple-version ]
   plan:
@@ -269,6 +346,14 @@ jobs:
     params: { bump: minor, pre: rc }
   - put: simple-php-version
     params: { file: version/number }
+
+- name: simple-php-promote
+  serial_groups: [ simple-php-version, simple-version ]
+  plan:
+  - get: ftp
+    resource: ftp
+  - put: ftp-release
+    params: { file: ftp/simple-php-*.tar.gz }
 
 ##################
 #### SIMPLE UI
@@ -293,7 +378,8 @@ jobs:
   #- put: simple-milestone
     #params: { file: build-output/simple-ui-*.tar.gz }
   - put: ftp
-    params: { file: build-output/simple-php-*.tar.gz }  
+    #resource: ftp
+    params: { file: build-output/simple-ui-*.tar.gz }  
   - put: simple-ui-version
     params: { file: version/number }
   #- put: simple-ui-release
@@ -311,13 +397,14 @@ jobs:
     - get: pipeline
       passed: [ prepare-itest-env ]
     - get: release
-      resource: simple-milestone
+      resource: ftp
       passed: [ build-simple-ui ]
       trigger: true
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
       <<: *cf-params
+      CF_SPACE: {{cf-space}}
       CF_APP_NAME: {{cf-simple-ui-name}}
       CF_APP_HOST: {{cf-simple-ui-host}}
       CF_APP_PATH: .
@@ -340,10 +427,12 @@ jobs:
     file: pipeline/ci/itest.yml
     params:
       <<: *cf-params
+      CF_SPACE: {{cf-space}}
       CF_APP_NAME: {{cf-simple-ui-name}}
       CF_APP_HOST: {{cf-simple-ui-host}}
 
-# Manual tasks to bump version
+# publish
+###############################
 - name: simple-ui-major
   serial_groups: [ simple-version ]
   plan:
@@ -366,10 +455,9 @@ jobs:
   serial_groups: [ simple-ui-version, simple-version ]
   plan:
   - get: ftp
-      resource: simple-milestone
-      passed: [ itest-simple-ui ]
- - put: ftp-release
-    params: { file: simple-php-*.tar.gz }
+    resource: ftp
+  - put: ftp-release
+    params: { file: ftp/simple-ui-*.tar.gz }
  
 ################
 #### itest-all

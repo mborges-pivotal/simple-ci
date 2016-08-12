@@ -18,7 +18,7 @@ cat <<EOF >manifest.yml
 ---
 applications:
 - name: $CF_APP_NAME
-  host: $CF_APP_HOST
+  host: $CF_APP_HOST-$CF_SPACE
   path: $CF_APP_PATH
   memory: 256M
   instances: 1
