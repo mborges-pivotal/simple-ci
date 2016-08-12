@@ -20,4 +20,4 @@ if [ $? -ne 0 ]; then
 	echo " !!! ERROR !!!" >&2
 fi
 
-exit 1
+#exit 1
