@@ -11,7 +11,7 @@ pushd project
 
 php -v
 wget http://www.phing.info/get/phing-latest.phar
-php phing-latest.phar build.xml
+#php phing-latest.phar build.xml
 
 composer install
 #SLEEP=60
