@@ -18,11 +18,13 @@ groups:
   - simple-ui-major
   - simple-ui-minor
   - simple-ui-promote
+
 - name: deploy
   jobs:
   - prepare-uat-env
   - prepare-prod-env
   - deploy-simple-php-uat
+  - deploy-simple-ui-uat
 
 ##################################################
 # RESOURCES TYPES
@@ -76,6 +78,17 @@ resources:
     uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
     regex: (?P<file>simple-(?:php|ui)-(?P<version>.*).tar.gz)
 
+- name: ftp-release-php
+  type: ftp
+  source:
+    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
+    regex: (?P<file>simple-php-(?P<version>.*).tar.gz)
+
+- name: ftp-release-ui
+  type: ftp
+  source:
+    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
+    regex: (?P<file>simple-ui-(?P<version>.*).tar.gz)
 
 #### Simple PHP
 #################
@@ -93,7 +106,17 @@ resources:
     uri: {{simple-git-version-uri}}
     branch: {{simple-git-version-branch}}
     file: number-simple-php
-    initial_version: 1.0.0-rc.0
+    initial_version: 1.0.0
+    private_key: {{git-private-key}}
+
+- name: simple-php-rl-version
+  type: semver
+  source:
+    driver: git
+    uri: {{simple-git-version-uri}}
+    branch: {{simple-git-version-branch}}
+    file: number-simple-php-rl
+    initial_version: 1.0.0
     private_key: {{git-private-key}}
 
 # Work in progress - after UAT test
@@ -120,7 +143,17 @@ resources:
     uri: {{simple-git-version-uri}}
     branch: {{simple-git-version-branch}}
     file: number-simple-ui
-    initial_version: 1.0.0-rc.0
+    initial_version: 1.0.0
+    private_key: {{git-private-key}}
+
+- name: simple-ui-rl-version
+  type: semver
+  source:
+    driver: git
+    uri: {{simple-git-version-uri}}
+    branch: {{simple-git-version-branch}}
+    file: number-simple-ui-rl
+    initial_version: 1.0.0
     private_key: {{git-private-key}}
 
 # Work in progress - after UAT test
@@ -214,12 +247,12 @@ jobs:
     - get: pipeline
       passed: [ prepare-uat-env ]
     - get: release
-      resource: ftp-release
+      resource: ftp-release-php
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
       <<: *cf-params
-      CF_SPACE: {{cf-uatspace}}
+      CF_SPACE: {{cf-uat-space}}
       CF_APP_NAME: {{cf-simple-php-name}}
       CF_APP_HOST: {{cf-simple-php-host}}
       CF_APP_PATH: ./project
@@ -230,6 +263,30 @@ jobs:
     params:
       manifest: prepare-manifest-output/manifest.yml
       current_app_name: {{cf-simple-php-name}}
+
+- name: deploy-simple-ui-uat
+  serial: true
+  plan:
+  - aggregate:
+    - get: pipeline
+      passed: [ prepare-uat-env ]
+    - get: release
+      resource: ftp-release-ui
+  - task: prepare-manifest
+    file: pipeline/ci/prepare-manifest.yml
+    params:
+      <<: *cf-params
+      CF_SPACE: {{cf-uat-space}}
+      CF_APP_NAME: {{cf-simple-ui-name}}
+      CF_APP_HOST: {{cf-simple-ui-host}}
+      CF_APP_PATH: ./project
+      CF_APP_SERVICES: {{cf-simple-ui-services}}
+      CF_BUILDPACK: php_oracle_buildpack
+      CF_ARTIFACT_ID: simple-ui
+  - put: cf-uat
+    params:
+      manifest: prepare-manifest-output/manifest.yml
+      current_app_name: {{cf-simple-ui-name}}
 
 - name: prepare-prod-env
   plan:
@@ -262,7 +319,7 @@ jobs:
       trigger: true
     - get: version
       resource: simple-php-version
-      params: { pre: rc }
+      params: { bump: patch }
   - task: build
     file: pipeline/ci/build-php.yml
     params:
@@ -334,7 +391,7 @@ jobs:
   plan:
   - get: version
     resource: simple-php-version
-    params: { bump: major, pre: rc }
+    params: { bump: major }
   - put: simple-php-version
     params: { file: version/number }
 
@@ -343,7 +400,7 @@ jobs:
   plan:
   - get: version
     resource: simple-php-version
-    params: { bump: minor, pre: rc }
+    params: { bump: minor }
   - put: simple-php-version
     params: { file: version/number }
 
@@ -353,7 +410,7 @@ jobs:
   - get: ftp
     resource: ftp
   - put: ftp-release
-    params: { file: ftp/simple-php-*.tar.gz }
+    params: { file: ftp/simple-php-*.tar.gz}
 
 ##################
 #### SIMPLE UI
@@ -370,7 +427,7 @@ jobs:
       trigger: true
     - get: version
       resource: simple-ui-version
-      params: { pre: rc }
+      params: { bump: patch }
   - task: build
     file: pipeline/ci/build-gulp.yml
     params:
@@ -438,7 +495,7 @@ jobs:
   plan:
   - get: version
     resource: simple-ui-version
-    params: { bump: major, pre: rc }
+    params: { bump: major }
   - put: simple-ui-version
     params: { file: version/number }
 
@@ -447,7 +504,7 @@ jobs:
   plan:
   - get: version
     resource: simple-ui-version
-    params: { bump: minor, pre: rc }
+    params: { bump: minor }
   - put: simple-ui-version
     params: { file: version/number }
 
@@ -457,7 +514,8 @@ jobs:
   - get: ftp
     resource: ftp
   - put: ftp-release
-    params: { file: ftp/simple-ui-*.tar.gz }
+    params: { file: ftp/simple-ui-*.tar.gz}
+
  
 ################
 #### itest-all
