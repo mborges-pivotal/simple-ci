@@ -12,7 +12,9 @@ pushd project
 #echo "Running npm install..."
 #npm install &>/dev/null
 #echo "Done."
-#bower install --save
+
+npm install --save-dev gulp
+bower install --save
 
 echo "Runnin gulp"
 gulp
