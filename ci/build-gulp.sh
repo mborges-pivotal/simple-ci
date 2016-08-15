@@ -8,12 +8,20 @@ echo "####### ${ARTIFACT_ID}  #########"
 echo "####### ${VERSION}  #########"
 
 pushd project
-echo "Running npm install..."
-npm install &>/dev/null
-echo "Done."
-bower install --save
+
+#echo "Running npm install..."
+#npm install &>/dev/null
+#echo "Done."
+#bower install --save
+
+echo "Runnin gulp"
 gulp
+
+newman -v
+
 #SLEEP=60
+
+
 popd
 
 # give services time to spin up
