@@ -13,7 +13,7 @@ pushd project
 #npm install &>/dev/null
 #echo "Done."
 
-npm install --save-dev gulp
+npm install --save-dev
 bower install --save
 
 echo "Runnin gulp"
