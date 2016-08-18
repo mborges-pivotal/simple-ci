@@ -19,8 +19,6 @@ bower install --save
 echo "Runnin gulp"
 gulp
 
-newman -v
-
 #SLEEP=60
 
 
