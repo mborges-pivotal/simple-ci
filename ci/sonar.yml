@@ -5,7 +5,7 @@ image_resource:
   type: docker-image
   source:
     repository: mborges/sonar-scanner
-
+sonar
 params:
   MAVEN_OPTS:
   MAVEN_CONFIG:
@@ -18,5 +18,5 @@ inputs:
 run:
   path: sonar-scanner
   args: [
-    -Dsonar.host.url=$SONAR_HOST_URL
+    "-Dsonar.host.url=$SONAR_HOST_URL"
   ]
