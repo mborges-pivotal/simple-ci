@@ -13,7 +13,8 @@ params:
   SONAR_HOST_URL:
 
 inputs:
-  - name: simple-php
+  - name: pipeline
+  - name: project
 
 run:
   path: sonar-scanner
