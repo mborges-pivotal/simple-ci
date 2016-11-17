@@ -16,7 +16,4 @@ inputs:
   - name: project
 
 run:
-  path: sonar-scanner
-  args: [
-    "-Dsonar.host.url=$SONAR_HOST_URL"
-  ]
+  path: pipeline/ci/sonar.sh
