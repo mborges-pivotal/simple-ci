@@ -2,15 +2,15 @@
 # PCF
 ###############
 # All application current target to the same space
-cf-api-url: https://api.pcf.borgescloud.com
-cf-system-domain: pcf.borgescloud.com
-cf-app-domain: pcf.borgescloud.com
+cf-api-url: https://api.system.azure.borgescloud.com
+cf-system-domain: system.azure.borgescloud.com
+cf-app-domain: apps.azure.borgescloud.com
 cf-username: mborges
-cf-org: Borges-Org
+cf-org: mborges-org
 cf-skip-ssl: true
-cf-space: qa
-cf-uat-space: uat
-cf-prod-space: prod
+cf-space: development
+cf-uat-space: test
+cf-prod-space: production
 
 # PCF Service
 # can be used by one or more applications

@@ -10,6 +10,7 @@ groups:
   - deploy-simple-ui
   - itest-simple-ui
   - itest-all
+  - sonar-scanner
 - name: publish
   jobs:
   - simple-php-major
@@ -32,10 +33,11 @@ groups:
 # RESOURCES TYPES
 ##################################################
 resource_types:
-- name: ftp
+- name: artifactory
   type: docker-image
   source:
-    repository: aequitas/ftp-resource
+    repository: mborges/artifactory-resource
+
 
 ##################################################
 # RESOURCES
@@ -46,51 +48,45 @@ resources:
   source:
     uri: {{pipeline-git-uri}}
     branch: {{pipeline-git-branch}}
-    #privage_key: {{git-private-key}}
+    #private_key: {{git-private-key}}
 
-- name: simple-milestone
-  type: s3
+- name: artifactory-release-php
+  type: artifactory
   source:
-    bucket: {{s3-bucket-milestone}}
-    regexp: simple-(?:php|ui)-(.*).tar.gz
-    access_key_id: {{aws-access-key-id}}
-    secret_access_key: {{aws-secret-access-key}}
-    #endpoint: {{s3-endpoint}}
-    region_name: us-west-2
+    endpoint: http://artifactory.borgescloud.com/artifactory
+    repository: "/libs-release-local/Simple"
+    regex: "simple-php-(?<version>.*).tar.gz"
+    username: admin
+    password: password
 
-- name: simple-release
-  type: s3
+- name: artifactory-snapshot-php
+  type: artifactory
   source:
-    bucket: {{s3-bucket-release}}
-    regexp: simple-(?:php|ui)-(.*).tar.gz
-    access_key_id: {{aws-access-key-id}}
-    secret_access_key: {{aws-secret-access-key}}
-    #endpoint: {{s3-endpoint}}
-    region_name: us-west-2
+    endpoint: http://artifactory.borgescloud.com/artifactory
+    repository: "/libs-snapshot-local/Simple"
+    regex: "simple-php-(?<version>.*).tar.gz"
+    username: admin
+    password: password
 
-- name: ftp-php
-  type: ftp
+- name: artifactory-release-ui
+  type: artifactory
   source:
-    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm
-    regex: (?P<file>simple-php-(?P<version>.*).tar.gz)
+    endpoint: http://artifactory.borgescloud.com/artifactory
+    repository: "/libs-release-local/Simple"
+    regex: "simple-ui-(?<version>.*).tar.gz"
+    username: admin
+    password: password
 
-- name: ftp-ui
-  type: ftp
+- name: artifactory-snapshot-ui
+  type: artifactory
   source:
-    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm
-    regex: (?P<file>simple-ui-(?P<version>.*).tar.gz)
+    endpoint: http://artifactory.borgescloud.com/artifactory
+    repository: "/libs-snapshot-local/Simple"
+    regex: "simple-ui-(?<version>.*).tar.gz"
+    username: admin
+    password: password
 
-- name: ftp-release-php
-  type: ftp
-  source:
-    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
-    regex: (?P<file>simple-php-(?P<version>.*).tar.gz)
 
-- name: ftp-release-ui
-  type: ftp
-  source:
-    uri: ftp://ftpuser:pivotal@ec2-54-149-58-221.us-west-2.compute.amazonaws.com/home/ftpuser/gm-release
-    regex: (?P<file>simple-ui-(?P<version>.*).tar.gz)
 
 #### Simple PHP
 #################
@@ -111,23 +107,6 @@ resources:
     initial_version: 1.0.0
     private_key: {{git-private-key}}
 
-- name: simple-php-rl-version
-  type: semver
-  source:
-    driver: git
-    uri: {{simple-git-version-uri}}
-    branch: {{simple-git-version-branch}}
-    file: number-simple-php-rl
-    initial_version: 1.0.0
-    private_key: {{git-private-key}}
-
-# Work in progress - after UAT test
-- name: simple-php-release
-  type: github-release
-  source:
-    user: mborges-pivotal
-    repository: simple-php
-    access_token: {{git-access-token}}
 
 #### Simple UI
 #################
@@ -147,24 +126,6 @@ resources:
     file: number-simple-ui
     initial_version: 1.0.0
     private_key: {{git-private-key}}
-
-- name: simple-ui-rl-version
-  type: semver
-  source:
-    driver: git
-    uri: {{simple-git-version-uri}}
-    branch: {{simple-git-version-branch}}
-    file: number-simple-ui-rl
-    initial_version: 1.0.0
-    private_key: {{git-private-key}}
-
-# Work in progress - after UAT test
-- name: simple-ui-release
-  type: github-release
-  source:
-    user: mborges-pivotal
-    repository: simple-ui
-    access_token: {{git-access-token}}    
 
 
 ##################
@@ -250,7 +211,7 @@ jobs:
     - get: pipeline
       passed: [ prepare-uat-env ]
     - get: release
-      resource: ftp-release-php
+      resource: artifactory-release-php
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
@@ -275,7 +236,7 @@ jobs:
     - get: pipeline
       passed: [ prepare-uat-env ]
     - get: release
-      resource: ftp-release-ui
+      resource: artifactory-release-ui
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
@@ -316,7 +277,7 @@ jobs:
     - get: pipeline
       passed: [ deploy-simple-php-uat, prepare-prod-env ]
     - get: release
-      resource: ftp-release-php
+      resource: artifactory-release-php
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
@@ -341,7 +302,7 @@ jobs:
     - get: pipeline
       passed: [ deploy-simple-ui-uat, prepare-prod-env ]
     - get: release
-      resource: ftp-release-ui
+      resource: artifactory-release-ui
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
@@ -385,15 +346,20 @@ jobs:
   #  params: { file: build-output/simple-php-*.tar.gz }
   - put: simple-php-version
     params: { file: version/number }
-  - put: ftp-php
+  - put: artifactory-snapshot-php
     params: { file: build-output/simple-php-*.tar.gz }
-  # Commented out the GIT Release  
-  #- put: simple-php-release
-    #params:
-      #name: version/number
-      #tag: version/number
-      #globs:
-      #- build-output/simple-php-*.tar.gz
+
+- name: sonar-scanner
+  plan:
+    - get: pipeline
+    - get: project
+      resource: simple-php
+      trigger: true
+      passed: [ build-simple-php ]
+    - task: sonar
+      file: pipeline/ci/sonar.yml
+      params: 
+        SONAR_HOST_URL: http://docker.borgescloud.com:9000
 
 # Deploy on PCF
 - name: deploy-simple-php
@@ -403,13 +369,9 @@ jobs:
     - get: pipeline
       passed: [ prepare-itest-env ]
     - get: release
-      resource: ftp-php
+      resource: artifactory-snapshot-php
       passed: [ build-simple-php ]
       trigger: true
-    #- get: release
-      #resource: simple-milestone
-      #passed: [ build-simple-php ]
-      #trigger: true
   - task: prepare-manifest
     file: pipeline/ci/prepare-manifest.yml
     params:
@@ -419,10 +381,9 @@ jobs:
       CF_APP_HOST: {{cf-simple-php-host}}
       CF_APP_PATH: ./project
       CF_APP_SERVICES: {{cf-simple-php-services}}
-      CF_BUILDPACK: php_oracle_buildpack
+      CF_BUILDPACK: php_buildpack
       CF_ARTIFACT_ID: simple-php
       CF_INSTANCES: 1
-
   - put: cf-itest
     params:
       manifest: prepare-manifest-output/manifest.yml
@@ -466,10 +427,10 @@ jobs:
 - name: simple-php-promote
   serial_groups: [ simple-php-version, simple-version ]
   plan:
-  - get: ftp
-    resource: ftp-php
-  - put: ftp-release-php
-    params: { file: ftp/simple-php-*.tar.gz, keep_versions: 1}
+  - get: artifactory
+    resource: artifactory-snapshot-php
+  - put: artifactory-release-php
+    params: { file: artifactory/simple-php-*.tar.gz}
 
 ##################
 #### SIMPLE UI
@@ -491,19 +452,10 @@ jobs:
     file: pipeline/ci/build-gulp.yml
     params:
       ARTIFACT_ID: simple-ui
-  #- put: simple-milestone
-    #params: { file: build-output/simple-ui-*.tar.gz }
-  - put: ftp
-    resource: ftp-ui
+  - put: artifactory-snapshot-ui
     params: { file: build-output/simple-ui-*.tar.gz }  
   - put: simple-ui-version
     params: { file: version/number }
-  #- put: simple-ui-release
-    #params:
-      #name: version/number
-      #ag: version/number
-      #globs:
-      #- build-output/simple-ui-*.tar.gz    
 
 # Deploy on PCF
 - name: deploy-simple-ui
@@ -513,7 +465,7 @@ jobs:
     - get: pipeline
       passed: [ prepare-itest-env ]
     - get: release
-      resource: ftp-ui
+      resource: artifactory-snapshot-ui
       passed: [ build-simple-ui ]
       trigger: true
   - task: prepare-manifest
@@ -571,10 +523,10 @@ jobs:
 - name: simple-ui-promote
   serial_groups: [ simple-ui-version, simple-version ]
   plan:
-  - get: ftp
-    resource: ftp-ui
-  - put: ftp-release-ui
-    params: { file: ftp/simple-ui-*.tar.gz, keep_versions: 1}
+  - get: artifactory
+    resource: artifactory-snapshot-ui
+  - put: artifactory-release-ui
+    params: { file: artifactory/simple-ui-*.tar.gz}
 
  
 ################
