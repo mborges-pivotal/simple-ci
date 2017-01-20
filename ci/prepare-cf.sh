@@ -47,11 +47,11 @@ if [ -z "$HAS_SERVICE" ]; then
   cf cups oracle -p "{ \"url\": \"$CF_DB_SERVICE_URL\", \"username\": \"$CF_DB_SERVICE_USERNAME\", \"password\": \"$CF_DB_SERVICE_PASSWORD\" }"
 fi
 
-HAS_SERVICE=$(cf services | grep redis || true)
-if [ -z "$HAS_SERVICE" ]; then
-   cf create-service $CF_REDIS_SERVICE
-  SLEEP=5
-fi
+#HAS_SERVICE=$(cf services | grep redis || true)
+#if [ -z "$HAS_SERVICE" ]; then
+#   cf create-service $CF_REDIS_SERVICE
+#  SLEEP=5
+#fi
 
 HAS_SERVICE=$(cf services | grep rabbit || true)
 if [ -z "$HAS_SERVICE" ]; then
